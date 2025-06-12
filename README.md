@@ -272,4 +272,50 @@ The enhanced version integrates seamlessly with:
 - AWS CLI v2
 - Linux/macOS/Windows
 - AWS Profiles with MFA
-- ✅ Temporary credentials (session tokens)
+- Temporary credentials (session tokens)
+
+
+## Acknowledgments and Credits
+
+### Original Author
+This project is a fork and enhancement of the excellent [AWS Enumerator](https://github.com/shabarkin/aws-enumerator) created by **Pavel Shabarkin** ([@shabarkin](https://github.com/shabarkin)). The original tool provides comprehensive AWS service enumeration with 600+ API calls and remains the foundation of this enhanced version.
+
+### Enhanced Profile Support
+The AWS profile integration and enhanced credential management features were developed in collaboration with **Claude (Anthropic)** to modernize the tool's authentication capabilities while preserving all original functionality.
+
+#### Enhancement Contributions:
+- **AWS Profile Integration**: Support for `~/.aws/credentials` and `~/.aws/config` files
+- **Multi-source Credential Loading**: Environment variables → AWS profiles → .env file priority
+- **Backward Compatibility**: All original `.env` and environment variable workflows preserved
+- **Profile Management**: New `profiles` command for listing available AWS profiles
+- **Enhanced Security**: Modern AWS credential practices with improved .gitignore
+- **Session Token Support**: Full support for temporary credentials and MFA
+- **Region Auto-detection**: Automatic region loading from AWS config files
+- **Comprehensive Documentation**: Updated usage examples and security best practices
+
+### Technology Stack
+- **Original Framework**: Go-based AWS SDK v1 enumeration engine by Pavel Shabarkin
+- **Enhancement Integration**: Claude AI assistance for credential management modernization
+- **AWS SDK**: Leverages official AWS SDK for Go for all API interactions
+- **Profile Parsing**: Custom AWS credentials and config file parser
+- **Backward Compatibility**: Maintains all original servicemaster enumeration logic
+
+### Collaboration Approach
+The enhancements were developed through an iterative process that prioritized:
+1. **Preserving Original Functionality**: Zero breaking changes to existing workflows
+2. **Adding Modern Features**: AWS profile support following AWS CLI conventions
+3. **Maintaining Performance**: All original enumeration speed and capabilities intact
+4. **Security Best Practices**: Enhanced credential management without compromising functionality
+
+### Special Thanks
+- **Pavel Shabarkin** for creating the original AWS Enumerator and its powerful enumeration engine
+- **AWS Team** for the comprehensive Go SDK that makes this tool possible
+- **Security Community** for feedback and testing of AWS enumeration tools
+- **Anthropic** for Claude AI assistance in implementing the profile enhancement features
+
+### License and Usage
+This enhanced version maintains the same license and usage terms as the original project. All enhancements are provided in the same spirit of supporting security professionals and penetration testers in their AWS security assessments.
+
+---
+
+> **Note**: This tool is intended for authorized security testing only. Always ensure you have proper permissions before running enumeration against any AWS environment.
