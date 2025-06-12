@@ -1,6 +1,6 @@
 module github.com/threatroute66/aws-enumerator
 
-go 1.15
+go 1.24.2
 
 require (
 	github.com/aws/aws-sdk-go v1.55.7
