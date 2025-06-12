@@ -3,6 +3,7 @@ module github.com/threatroute66/aws-enumerator
 go 1.15
 
 require (
+	github.com/aws/aws-sdk-go v1.55.7
 	github.com/aws/aws-sdk-go-v2/config v1.1.5
 	github.com/aws/aws-sdk-go-v2/service/acm v1.2.2
 	github.com/aws/aws-sdk-go-v2/service/amplify v1.1.5
@@ -111,5 +112,6 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/xray v1.2.2
 	github.com/fatih/color v1.10.0
 	github.com/joho/godotenv v1.3.0
+	github.com/threatroute66/aws-enumerator v0.0.0-20220412153344-4f2a98387b02
 	github.com/wayneashleyberry/terminal-dimensions v1.0.0
 )
