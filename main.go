@@ -434,7 +434,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/shabarkin/aws-enumerator/utils"
+	"github.com/threatroute66/aws-enumerator/utils"
 )
 
 // SetEnumerationPipeline sets up and runs the enumeration with profile support
