@@ -110,8 +110,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/workmail"
 	"github.com/aws/aws-sdk-go-v2/service/workspaces"
 	"github.com/aws/aws-sdk-go-v2/service/xray"
-	"github.com/shabarkin/aws-enumerator/servicemaster"
-	"github.com/shabarkin/aws-enumerator/utils"
+	"github.com/threatroute66/aws-enumerator/servicemaster"
+	"github.com/threatroute66/aws-enumerator/utils"
 )
 
 func GetServices() []servicemaster.ServiceMaster {

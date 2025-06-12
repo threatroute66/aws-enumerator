@@ -1,4 +1,4 @@
-module github.com/shabarkin/aws-enumerator
+module github.com/threatroute66/aws-enumerator
 
 go 1.15
 

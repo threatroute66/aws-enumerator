@@ -13,7 +13,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
-	"github.com/shabarkin/aws-enumerator/utils"
+	"github.com/threatroute66/aws-enumerator/utils"
 )
 
 type ServiceMaster struct {
