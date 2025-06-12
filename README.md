@@ -1,5 +1,7 @@
 # AWS Service Enumeration
 
+Forked from Pavel Shabarkin's https://github.com/shabarkin/aws-enumerator
+
 # Disclaimer
 
 The tool is in beta stage (testing in progress), no destructive API Calls used ( read only actions ).
