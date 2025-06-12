@@ -266,4 +266,10 @@ The enhanced version integrates seamlessly with:
 - **CI/CD pipelines**: Environment variable support
 - **Docker containers**: Flexible credential mounting
 
+## Tested Environments
 
+- Go 1.19+
+- AWS CLI v2
+- Linux/macOS/Windows
+- AWS Profiles with MFA
+- ✅ Temporary credentials (session tokens)
