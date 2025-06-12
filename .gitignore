@@ -1,0 +1,288 @@
+# AWS Enumerator .gitignore
+# SECURITY CRITICAL: This file prevents committing sensitive data
+
+# ===========================================
+# CREDENTIAL FILES (NEVER COMMIT THESE!)
+# ===========================================
+
+# Environment files with credentials
+.env
+.env.*
+*.env
+.environment
+
+# AWS credential files (if stored locally in project)
+.aws/
+aws-credentials
+credentials
+config
+aws-config
+
+# Backup credential files
+*.credentials
+*.creds
+credential*
+*credentials*
+
+# Session tokens and temporary files
+*.token
+*.session
+aws-session-*
+
+# ===========================================
+# AWS ENUMERATOR OUTPUT FILES
+# ===========================================
+
+# Real enumeration results (but allow examples)
+results/
+output/
+enumeration-results/
+enum-results/
+real-*.json
+production-*.json
+*-results.json
+*-output.json
+
+# Log files with real data
+*.log
+logs/
+enumeration.log
+aws-enum.log
+
+# Temporary enumeration data
+temp/
+tmp/
+.tmp/
+cache/
+
+# Allow example/demo files
+!example-*.json
+!demo-*.json
+!sample-*.json
+!examples/
+!docs/examples/
+
+# ===========================================
+# GO LANGUAGE SPECIFICS
+# ===========================================
+
+# Compiled binaries (exclude from repo, build locally)
+aws-enumerator
+aws-enumerator.exe
+dist/
+build/
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool
+*.out
+
+# Dependency directories (uncomment if using vendor)
+# vendor/
+
+# Go workspace file
+go.work
+go.work.sum
+
+# Go module download cache
+/go/pkg/mod/
+
+# Allow build scripts and makefiles
+!Makefile
+!build.sh
+!install.sh
+
+# ===========================================
+# IDE AND EDITOR FILES
+# ===========================================
+
+# Visual Studio Code
+.vscode/
+*.code-workspace
+
+# GoLand/IntelliJ
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Vim
+*.swp
+*.swo
+*~
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Atom
+.atom/
+
+# ===========================================
+# OPERATING SYSTEM FILES
+# ===========================================
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.tmp
+*.temp
+Desktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# ===========================================
+# SECURITY AND DEBUGGING FILES
+# ===========================================
+
+# Debug files
+debug
+debug.log
+*.debug
+pprof/
+
+# Core dumps
+core
+core.*
+
+# Memory dumps
+*.dmp
+
+# SSH keys (if accidentally placed in project)
+id_rsa
+id_rsa.pub
+id_ed25519
+id_ed25519.pub
+*.pem
+*.key
+*.crt
+*.csr
+
+# Certificate files
+*.p12
+*.pfx
+
+# Configuration files that might contain secrets
+config.yaml
+config.yml
+config.json
+secrets.yaml
+secrets.yml
+secrets.json
+my-config.*
+personal-config.*
+
+# Allow example and template configurations
+!config.example.*
+!example-config.*
+!template-config.*
+!docs/config-examples/
+
+# ===========================================
+# DOCUMENTATION BUILD FILES
+# ===========================================
+
+# Documentation build output
+docs/_build/
+docs/site/
+
+# ===========================================
+# CUSTOM AWS ENUMERATOR FILES
+# ===========================================
+
+# Custom enumeration scripts
+custom-enum.sh
+custom-*.sh
+personal-*.go
+
+# Backup files
+*.bak
+*.backup
+*.old
+
+# Test configuration files
+test-config.*
+test-creds.*
+
+# Profile-specific files
+profiles/
+*-profile.json
+
+# ===========================================
+# EXAMPLE FILES TO KEEP TEMPLATE VERSIONS
+# ===========================================
+
+# Keep example files but ignore actual config
+!example.env
+!config.example.yaml
+!credentials.example
+
+# ===========================================
+# ADDITIONAL SECURITY PATTERNS
+# ===========================================
+
+# Any file containing 'secret', 'password', 'key' in name
+*secret*
+*password*
+*passwd*
+*private*
+
+# Terraform state files (if used for infrastructure)
+*.tfstate
+*.tfstate.*
+.terraform/
+
+# Docker files with potential secrets
+docker-compose.override.yml
+.dockerignore.local
+
+# Kubernetes secrets
+*secret.yaml
+*secret.yml
+
+# Any YAML/JSON that might contain credentials
+*cred*.yaml
+*cred*.yml
+*auth*.yaml
+*auth*.yml
