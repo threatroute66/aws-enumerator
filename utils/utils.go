@@ -1,262 +1,319 @@
 package utils
 
 import (
-	"bytes"
-	"encoding/json"
+	"bufio"
 	"fmt"
-	"io/ioutil"
 	"os"
-	"reflect"
+	"path/filepath"
 	"strings"
 
-	"github.com/fatih/color"
-	"github.com/joho/godotenv"
-	terminal "github.com/wayneashleyberry/terminal-dimensions"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/session"
 )
 
-const FILEPATH string = "./enum-results/"
-const ERROR_FILEPATH string = "./enum-results/errors/"
-
-// Colors
-var Yellow = color.New(color.FgYellow).SprintFunc()
-var Red = color.New(color.FgRed).SprintFunc()
-var White = color.New(color.FgWhite).SprintFunc()
-var Cyan = color.New(color.FgCyan).SprintFunc()
-var Green = color.New(color.FgGreen).SprintFunc()
-var Magenta = color.New(color.FgMagenta).SprintFunc()
-
-func countPartWidth(terminal_width, service int) (n int) {
-	if terminal_width%2 == 0 {
-		if service%2 == 0 {
-			n = (int(terminal_width) - service - 2) / 2
-		} else {
-			n = (int(terminal_width) - service - 2 - 1) / 2
-		}
-	} else {
-		if service%2 == 0 {
-			n = (int(terminal_width) - service - 2 - 1) / 2
-		} else {
-			n = (int(terminal_width) - service - 2) / 2
-		}
-	}
-	return n
+// Color functions for terminal output (keep original implementations)
+func Red(text string) string {
+	return fmt.Sprintf("\033[31m%s\033[0m", text)
 }
 
-func PrintDividedLine(service string) {
-
-	terminal_width, _ := terminal.Width()
-	n := countPartWidth(int(terminal_width), len(service))
-
-	fmt.Println()
-	if service == "" {
-		fmt.Println(White(strings.Repeat("-", int(terminal_width))))
-	} else {
-		fmt.Println(White(strings.Repeat("-", n)), Magenta(strings.ToUpper(service)), White(strings.Repeat("-", n)))
-	}
+func Green(text string) string {
+	return fmt.Sprintf("\033[32m%s\033[0m", text)
 }
 
-func ProcessServiceArgument(str string) []string {
-
-	s := strings.Split(str, ",")
-
-	if len(s) > 10 {
-		fmt.Println(Red("Error:"), Yellow("Provide less than 10 services or specify `all` for total enumeration"))
-		os.Exit(1)
-	} else if len(s) <= 0 {
-		fmt.Println(Red("Error:"), Yellow("Provide at least 1 service or specify `all` for total enumeration"))
-		os.Exit(1)
-	}
-
-	s = ToLowerServices(s)
-	s = RemoveDuplicateValues(s)
-	return s
+func Yellow(text string) string {
+	return fmt.Sprintf("\033[33m%s\033[0m", text)
 }
 
-func ServiceNames() []string {
-	service_names := []string{"acm", "amplify", "apigateway", "appmesh", "appsync", "athena", "autoscaling", "backup", "batch", "chime", "cloud9", "clouddirectory", "cloudformation", "cloudfront", "cloudhsm", "cloudhsmv2", "cloudsearch", "cloudtrail", "codebuild", "codecommit", "codedeploy", "codepipeline", "codestar", "comprehend", "datapipeline", "datasync", "dax", "devicefarm", "directconnect", "dlm", "dynamodb", "ec2", "ecr", "ecs", "eks", "elasticache", "elasticbeanstalk", "elastictranscoder", "firehose", "fms", "fsx", "gamelift", "globalaccelerator", "glue", "greengrass", "guardduty", "health", "iam", "inspector", "iot", "iotanalytics", "kafka", "kinesis", "kinesisanalytics", "kinesisvideo", "kms", "lambda", "lightsail", "machinelearning", "macie", "mediaconnect", "mediaconvert", "medialive", "mediapackage", "mediastore", "mediatailor", "mobile", "mq", "opsworks", "organizations", "pinpoint", "polly", "pricing", "ram", "rds", "redshift", "rekognition", "robomaker", "route53", "route53domains", "route53resolver", "s3", "sagemaker", "secretsmanager", "securityhub", "servicecatalog", "shield", "signer", "sms", "snowball", "sns", "sqs", "ssm", "storagegateway", "sts", "support", "transcribe", "transfer", "translate", "waf", "workdocs", "worklink", "workmail", "workspaces", "xray"}
-	return service_names
+func Reset() string {
+	return "\033[0m"
 }
 
-func Find(a []string, x string) bool {
-	for _, n := range a {
-		if x == n {
-			return true
-		}
-	}
-	return false
+// AWSCredentials represents AWS credential information (NEW)
+type AWSCredentials struct {
+	AccessKeyID     string
+	SecretAccessKey string
+	SessionToken    string
+	Region          string
+	Source          string // "profile", "env", or "env_file"
 }
 
-func RemoveDuplicateValues(intSlice []string) []string {
-	keys := make(map[string]bool)
-	list := []string{}
-
-	// If the key(values of the slice) is not equal
-	// to the already present value in new slice (list)
-	// then we append it. else we jump on another element.
-	for _, entry := range intSlice {
-		if _, value := keys[entry]; !value {
-			keys[entry] = true
-			list = append(list, entry)
-		}
-	}
-	return list
-}
-
-func ToLowerServices(a []string) (services_lowercase []string) {
-	for _, n := range a {
-		services_lowercase = append(services_lowercase, strings.ToLower(n))
-	}
-	return services_lowercase
-}
-
-func CheckEnvFileExistance() bool {
-	if _, err := os.Stat(".env"); err != nil {
-		if os.IsNotExist(err) {
-			fmt.Println(Red("Error:"), Yellow("File .env does not exist"))
-			fmt.Println(Green("Fix:"), Yellow("use `./cloudrider cred -h` command"))
-			//fmt.Println(Red("Trace:"), Yellow(err))
-			os.Exit(1)
-			return false
-		}
-	}
-	return true
-}
-
-func CheckFileExistance(path string) bool {
-	if _, err := os.Stat(path); err != nil {
-		if os.IsNotExist(err) {
-			fmt.Println(Red("Error:"), Yellow("File"), Yellow(path), Yellow("does not exist"))
-			fmt.Println(Green("Fix:"), Yellow("DB does not exist, skip this service"))
-			//fmt.Println(Red("Trace:"), Yellow(err))
-			return false
-		}
-	}
-	return true
-}
-
-func LoadEnv() {
-	err := godotenv.Load(".env")
+// CreateAWScredentialsFile creates the .env file (ENHANCED - backward compatibility)
+func CreateAWScredentialsFile(region, accessKeyID, secretAccessKey, sessionToken *string) {
+	file, err := os.Create(".env")
 	if err != nil {
-		fmt.Println(Red("Error:"), Yellow("loading `.env` file"))
-		os.Exit(1)
+		fmt.Println(Red("Error: "), Yellow("Failed to create .env file"))
+		return
+	}
+	defer file.Close()
+
+	if region != nil && *region != "" {
+		file.WriteString(fmt.Sprintf("AWS_REGION=%s\n", *region))
+	}
+	if accessKeyID != nil && *accessKeyID != "" {
+		file.WriteString(fmt.Sprintf("AWS_ACCESS_KEY_ID=%s\n", *accessKeyID))
+	}
+	if secretAccessKey != nil && *secretAccessKey != "" {
+		file.WriteString(fmt.Sprintf("AWS_SECRET_ACCESS_KEY=%s\n", *secretAccessKey))
+	}
+	if sessionToken != nil && *sessionToken != "" {
+		file.WriteString(fmt.Sprintf("AWS_SESSION_TOKEN=%s\n", *sessionToken))
 	}
 }
 
-func PackResponse(response interface{}) string {
-	obj, err := json.Marshal(response)
+// LoadCredentials loads AWS credentials with profile support (NEW)
+func LoadCredentials(profile string) (*AWSCredentials, error) {
+	// Priority order:
+	// 1. AWS profile from ~/.aws/credentials (if profile specified)
+	// 2. Environment variables
+	// 3. .env file (backward compatibility)
+
+	// If profile is specified, load from AWS credentials file
+	if profile != "" {
+		return loadFromProfile(profile)
+	}
+
+	// Check environment variables first
+	if creds := loadFromEnvironment(); creds != nil {
+		return creds, nil
+	}
+
+	// Fall back to .env file for backward compatibility
+	return loadFromEnvFile()
+}
+
+// loadFromProfile loads credentials from AWS profile (NEW)
+func loadFromProfile(profileName string) (*AWSCredentials, error) {
+	homeDir, err := os.UserHomeDir()
 	if err != nil {
-		fmt.Println(Red("Error:"), Yellow("Marshal error, can't create a map:"))
-		fmt.Println(Green("Fix:"), Yellow("The problem should be on our side, contact support please"))
-		fmt.Println(Red("Trace:"), Yellow(err))
-		os.Exit(1)
+		return nil, fmt.Errorf("failed to get home directory: %v", err)
 	}
-	return string(obj)
-}
 
-func PrintPrettifiedJson(to_prettify string) (string, error) {
-	var prettified bytes.Buffer
-	err := json.Indent(&prettified, []byte(to_prettify), "", "\t")
+	credFile := filepath.Join(homeDir, ".aws", "credentials")
+	configFile := filepath.Join(homeDir, ".aws", "config")
 
+	// Load credentials from profile
+	creds, err := parseAWSCredentialsFile(credFile, profileName)
 	if err != nil {
-		return "", err
+		return nil, fmt.Errorf("failed to load profile %s: %v", profileName, err)
 	}
 
-	return prettified.String(), err
-}
-
-func GetJsonKey(m string) (key interface{}) {
-	var l map[string]interface{}
-	json.Unmarshal([]byte(m), &l)
-
-	p := reflect.ValueOf(l).MapRange()
-
-	for p.Next() {
-
-		key = reflect.ValueOf(p.Key()).Interface()
-
+	// Load region from config file if not in credentials
+	if creds.Region == "" {
+		if region := getRegionFromConfig(configFile, profileName); region != "" {
+			creds.Region = region
+		}
 	}
-	return key
+
+	creds.Source = "profile"
+	return creds, nil
 }
 
-func GetJsonFromFile(filepath string) (result map[string]interface{}) {
-	jsonFile, _ := os.Open(filepath)
-	byteValue, _ := ioutil.ReadAll(jsonFile)
+// loadFromEnvironment loads credentials from environment variables (NEW)
+func loadFromEnvironment() *AWSCredentials {
+	accessKey := os.Getenv("AWS_ACCESS_KEY_ID")
+	secretKey := os.Getenv("AWS_SECRET_ACCESS_KEY")
+	sessionToken := os.Getenv("AWS_SESSION_TOKEN")
+	region := os.Getenv("AWS_REGION")
 
-	err := json.Unmarshal(byteValue, &result)
+	if accessKey == "" || secretKey == "" {
+		return nil
+	}
+
+	return &AWSCredentials{
+		AccessKeyID:     accessKey,
+		SecretAccessKey: secretKey,
+		SessionToken:    sessionToken,
+		Region:          region,
+		Source:          "env",
+	}
+}
+
+// loadFromEnvFile loads credentials from .env file (ENHANCED - backward compatibility)
+func loadFromEnvFile() (*AWSCredentials, error) {
+	file, err := os.Open(".env")
 	if err != nil {
-		fmt.Println(Red("Error:"), Yellow("UnMarshal error, can't recreate an object"))
-		fmt.Println(Green("Fix:"), Yellow("The problem should be on our side, contact support please"))
-		fmt.Println(Red("Trace:"), Yellow(err))
+		return nil, fmt.Errorf("failed to open .env file: %v", err)
 	}
+	defer file.Close()
 
-	return result
-}
+	creds := &AWSCredentials{Source: "env_file"}
+	scanner := bufio.NewScanner(file)
 
-func AnalyseService(service string, print bool, filter string, errors_dump bool) {
-
-	// Error or result analyse
-	var filepath string
-	if !errors_dump {
-		filepath = FILEPATH + service + ".json"
-	} else {
-		filepath = ERROR_FILEPATH + service + "_errors.json"
-	}
-
-	// Display
-	PrintDividedLine(strings.ToUpper(service))
-	fmt.Println("")
-
-	// Check the file existance
-	if CheckFileExistance(filepath) {
-
-		// dump service db_file
-		result := GetJsonFromFile(filepath)
-
-		// check whether any info was stored
-		if len(result) == 0 {
-			fmt.Println(Red("Error:"), Yellow("No entries in provided service"))
-		} else {
-			s := reflect.ValueOf(result[service])
-
-			// go through apicalls
-			for i := 0; i < s.Len(); i++ {
-
-				m := s.Index(i).Interface().(string)
-				key := fmt.Sprintf("%v", GetJsonKey(m))
-				if strings.Contains(key, filter) {
-
-					// Display key
-					fmt.Println(Cyan(key))
-
-					if print {
-
-						json, err := PrintPrettifiedJson(m)
-						if err != nil {
-							fmt.Println(err)
-						}
-
-						// Display
-						fmt.Println(White(json))
-						PrintDividedLine("")
-						fmt.Println("")
-					}
-				}
-			}
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
 		}
 
+		parts := strings.SplitN(line, "=", 2)
+		if len(parts) != 2 {
+			continue
+		}
+
+		key := strings.TrimSpace(parts[0])
+		value := strings.TrimSpace(parts[1])
+
+		switch key {
+		case "AWS_ACCESS_KEY_ID":
+			creds.AccessKeyID = value
+		case "AWS_SECRET_ACCESS_KEY":
+			creds.SecretAccessKey = value
+		case "AWS_SESSION_TOKEN":
+			creds.SessionToken = value
+		case "AWS_REGION":
+			creds.Region = value
+		}
 	}
+
+	if creds.AccessKeyID == "" || creds.SecretAccessKey == "" {
+		return nil, fmt.Errorf("incomplete credentials in .env file")
+	}
+
+	return creds, nil
 }
 
-func CreateAWScredentialsFile(aws_region, aws_access_key_id, aws_secret_access_key, aws_session_token *string) {
+// parseAWSCredentialsFile parses AWS credentials file (NEW)
+func parseAWSCredentialsFile(filename, profileName string) (*AWSCredentials, error) {
+	file, err := os.Open(filename)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
 
-	awsCredentials := "AWS_REGION=" + *aws_region + "\n"
-	awsCredentials += "AWS_ACCESS_KEY_ID=" + *aws_access_key_id + "\n"
-	awsCredentials += "AWS_SECRET_ACCESS_KEY=" + *aws_secret_access_key + "\n"
-	awsCredentials += "AWS_SESSION_TOKEN=" + *aws_session_token + "\n"
+	var currentProfile string
+	creds := &AWSCredentials{}
+	scanner := bufio.NewScanner(file)
 
-	ioutil.WriteFile(".env", []byte(awsCredentials), 0644)
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+
+		// Check for profile section
+		if strings.HasPrefix(line, "[") && strings.HasSuffix(line, "]") {
+			currentProfile = strings.Trim(line, "[]")
+			continue
+		}
+
+		// Skip if not in target profile
+		if currentProfile != profileName {
+			continue
+		}
+
+		// Parse key-value pairs
+		parts := strings.SplitN(line, "=", 2)
+		if len(parts) != 2 {
+			continue
+		}
+
+		key := strings.TrimSpace(parts[0])
+		value := strings.TrimSpace(parts[1])
+
+		switch key {
+		case "aws_access_key_id":
+			creds.AccessKeyID = value
+		case "aws_secret_access_key":
+			creds.SecretAccessKey = value
+		case "aws_session_token":
+			creds.SessionToken = value
+		case "region":
+			creds.Region = value
+		}
+	}
+
+	if creds.AccessKeyID == "" || creds.SecretAccessKey == "" {
+		return nil, fmt.Errorf("profile %s not found or incomplete", profileName)
+	}
+
+	return creds, nil
 }
 
-// func LoadAWSCreds() {
-// 	ioutil.ReadFile()
-// }
+// getRegionFromConfig gets region from AWS config file (NEW)
+func getRegionFromConfig(filename, profileName string) string {
+	file, err := os.Open(filename)
+	if err != nil {
+		return ""
+	}
+	defer file.Close()
+
+	var currentProfile string
+	scanner := bufio.NewScanner(file)
+
+	// For default profile, look for [default], for others look for [profile name]
+	targetSection := "default"
+	if profileName != "default" {
+		targetSection = "profile " + profileName
+	}
+
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+
+		if strings.HasPrefix(line, "[") && strings.HasSuffix(line, "]") {
+			currentProfile = strings.Trim(line, "[]")
+			continue
+		}
+
+		if currentProfile != targetSection {
+			continue
+		}
+
+		parts := strings.SplitN(line, "=", 2)
+		if len(parts) == 2 && strings.TrimSpace(parts[0]) == "region" {
+			return strings.TrimSpace(parts[1])
+		}
+	}
+
+	return ""
+}
+
+// CreateAWSSession creates an AWS session with the loaded credentials (NEW)
+func CreateAWSSession(creds *AWSCredentials) (*session.Session, error) {
+	config := &aws.Config{}
+
+	// Set region if available
+	if creds.Region != "" {
+		config.Region = aws.String(creds.Region)
+	}
+
+	// Set credentials based on source
+	config.Credentials = credentials.NewStaticCredentials(
+		creds.AccessKeyID,
+		creds.SecretAccessKey,
+		creds.SessionToken,
+	)
+
+	return session.NewSession(config)
+}
+
+// ListAvailableProfiles lists available AWS profiles (NEW)
+func ListAvailableProfiles() ([]string, error) {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return nil, err
+	}
+
+	credFile := filepath.Join(homeDir, ".aws", "credentials")
+	file, err := os.Open(credFile)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	var profiles []string
+	scanner := bufio.NewScanner(file)
+
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if strings.HasPrefix(line, "[") && strings.HasSuffix(line, "]") {
+			profile := strings.Trim(line, "[]")
+			profiles = append(profiles, profile)
+		}
+	}
+
+	return profiles, nil
+}
