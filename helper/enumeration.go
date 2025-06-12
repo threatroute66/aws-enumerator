@@ -60,7 +60,7 @@ func SetEnumerationPipeline(services, speed, profile *string) {
 	}
 
 	// Get all AWS services from servicestructs
-	allServices := servicestructs.GetServices() // ✅ FOUND IT!
+	allServices := servicestructs.GetServices()
 
 	// Parse services - convert "all" or "iam,s3,sts" to string slice
 	var wantedServices []string
@@ -76,6 +76,9 @@ func SetEnumerationPipeline(services, speed, profile *string) {
 
 	// Convert speed string to int
 	speedInt := convertSpeedToInt(*speed)
+
+	fmt.Printf("%s Starting enumeration with services: %s, speed: %s%s\n",
+		utils.Green("Info:"), *services, *speed, utils.Reset())
 
 	// Call the actual servicemaster enumeration - THIS IS THE KEY LINE
 	servicemaster.ServiceCall(allServices, wantedServices, speedInt)

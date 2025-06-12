@@ -2,9 +2,12 @@ package utils
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -12,24 +15,30 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 )
 
-// Color functions for terminal output (keep original implementations)
-func Red(text string) string {
-	return fmt.Sprintf("\033[31m%s\033[0m", text)
+// Global variables for file paths
+var (
+	FILEPATH       = "enum-results/"
+	ERROR_FILEPATH = "enum-results/errors/"
+)
+
+// Color functions for terminal output
+func Red(text interface{}) string {
+	return fmt.Sprintf("\033[31m%v\033[0m", text)
 }
 
-func Green(text string) string {
-	return fmt.Sprintf("\033[32m%s\033[0m", text)
+func Green(text interface{}) string {
+	return fmt.Sprintf("\033[32m%v\033[0m", text)
 }
 
-func Yellow(text string) string {
-	return fmt.Sprintf("\033[33m%s\033[0m", text)
+func Yellow(text interface{}) string {
+	return fmt.Sprintf("\033[33m%v\033[0m", text)
 }
 
 func Reset() string {
 	return "\033[0m"
 }
 
-// AWSCredentials represents AWS credential information (NEW)
+// AWSCredentials represents AWS credential information
 type AWSCredentials struct {
 	AccessKeyID     string
 	SecretAccessKey string
@@ -38,7 +47,17 @@ type AWSCredentials struct {
 	Source          string // "profile", "env", or "env_file"
 }
 
-// CreateAWScredentialsFile creates the .env file (ENHANCED - backward compatibility)
+// PackResponse packs response data for JSON output (returns string for servicemaster)
+func PackResponse(data interface{}) string {
+	jsonData, err := json.MarshalIndent(data, "", "  ")
+	if err != nil {
+		fmt.Printf("Error marshalling JSON: %v\n", err)
+		return "{}"  // Return empty JSON string on error
+	}
+	return string(jsonData)
+}
+
+// CreateAWScredentialsFile creates the .env file (backward compatibility)
 func CreateAWScredentialsFile(region, accessKeyID, secretAccessKey, sessionToken *string) {
 	file, err := os.Create(".env")
 	if err != nil {
@@ -61,7 +80,7 @@ func CreateAWScredentialsFile(region, accessKeyID, secretAccessKey, sessionToken
 	}
 }
 
-// LoadCredentials loads AWS credentials with profile support (NEW)
+// LoadCredentials loads AWS credentials with profile support
 func LoadCredentials(profile string) (*AWSCredentials, error) {
 	// Priority order:
 	// 1. AWS profile from ~/.aws/credentials (if profile specified)
@@ -82,7 +101,7 @@ func LoadCredentials(profile string) (*AWSCredentials, error) {
 	return loadFromEnvFile()
 }
 
-// loadFromProfile loads credentials from AWS profile (NEW)
+// loadFromProfile loads credentials from AWS profile
 func loadFromProfile(profileName string) (*AWSCredentials, error) {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
@@ -109,7 +128,7 @@ func loadFromProfile(profileName string) (*AWSCredentials, error) {
 	return creds, nil
 }
 
-// loadFromEnvironment loads credentials from environment variables (NEW)
+// loadFromEnvironment loads credentials from environment variables
 func loadFromEnvironment() *AWSCredentials {
 	accessKey := os.Getenv("AWS_ACCESS_KEY_ID")
 	secretKey := os.Getenv("AWS_SECRET_ACCESS_KEY")
@@ -129,7 +148,7 @@ func loadFromEnvironment() *AWSCredentials {
 	}
 }
 
-// loadFromEnvFile loads credentials from .env file (ENHANCED - backward compatibility)
+// loadFromEnvFile loads credentials from .env file (backward compatibility)
 func loadFromEnvFile() (*AWSCredentials, error) {
 	file, err := os.Open(".env")
 	if err != nil {
@@ -173,7 +192,7 @@ func loadFromEnvFile() (*AWSCredentials, error) {
 	return creds, nil
 }
 
-// parseAWSCredentialsFile parses AWS credentials file (NEW)
+// parseAWSCredentialsFile parses AWS credentials file
 func parseAWSCredentialsFile(filename, profileName string) (*AWSCredentials, error) {
 	file, err := os.Open(filename)
 	if err != nil {
@@ -230,7 +249,7 @@ func parseAWSCredentialsFile(filename, profileName string) (*AWSCredentials, err
 	return creds, nil
 }
 
-// getRegionFromConfig gets region from AWS config file (NEW)
+// getRegionFromConfig gets region from AWS config file
 func getRegionFromConfig(filename, profileName string) string {
 	file, err := os.Open(filename)
 	if err != nil {
@@ -271,7 +290,7 @@ func getRegionFromConfig(filename, profileName string) string {
 	return ""
 }
 
-// CreateAWSSession creates an AWS session with the loaded credentials (NEW)
+// CreateAWSSession creates an AWS session with the loaded credentials
 func CreateAWSSession(creds *AWSCredentials) (*session.Session, error) {
 	config := &aws.Config{}
 
@@ -290,7 +309,7 @@ func CreateAWSSession(creds *AWSCredentials) (*session.Session, error) {
 	return session.NewSession(config)
 }
 
-// ListAvailableProfiles lists available AWS profiles (NEW)
+// ListAvailableProfiles lists available AWS profiles
 func ListAvailableProfiles() ([]string, error) {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
@@ -316,4 +335,75 @@ func ListAvailableProfiles() ([]string, error) {
 	}
 
 	return profiles, nil
+}
+
+// EnsureDirectories creates necessary directories for output files
+func EnsureDirectories() error {
+	// Create main results directory
+	if err := os.MkdirAll(FILEPATH, 0755); err != nil {
+		return fmt.Errorf("failed to create results directory: %v", err)
+	}
+
+	// Create errors directory
+	if err := os.MkdirAll(ERROR_FILEPATH, 0755); err != nil {
+		return fmt.Errorf("failed to create errors directory: %v", err)
+	}
+
+	return nil
+}
+
+// WriteJSONFile writes data to a JSON file
+func WriteJSONFile(filename string, data interface{}) error {
+	jsonString := PackResponse(data)
+	jsonData := []byte(jsonString)
+
+	fullPath := filepath.Join(FILEPATH, filename)
+	if err := ioutil.WriteFile(fullPath, jsonData, 0644); err != nil {
+		return fmt.Errorf("failed to write file %s: %v", fullPath, err)
+	}
+
+	return nil
+}
+
+// WriteErrorFile writes error data to a file
+func WriteErrorFile(filename string, errorData interface{}) error {
+	jsonString := PackResponse(errorData)
+	jsonData := []byte(jsonString)
+
+	fullPath := filepath.Join(ERROR_FILEPATH, filename)
+	if err := ioutil.WriteFile(fullPath, jsonData, 0644); err != nil {
+		return fmt.Errorf("failed to write error file %s: %v", fullPath, err)
+	}
+
+	return nil
+}
+
+// StringToInt converts string to integer
+func StringToInt(s string) int {
+	i, err := strconv.Atoi(s)
+	if err != nil {
+		return 0
+	}
+	return i
+}
+
+// IntToString converts integer to string
+func IntToString(i int) string {
+	return strconv.Itoa(i)
+}
+
+// CheckEnvFileExistance checks if .env file exists  
+func CheckEnvFileExistance() bool {
+	_, err := os.Stat(".env")
+	return !os.IsNotExist(err)
+}
+
+// Find searches for a value in a slice
+func Find(slice []string, value string) bool {
+	for _, item := range slice {
+		if item == value {
+			return true
+		}
+	}
+	return false
 }
